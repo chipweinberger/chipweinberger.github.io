@@ -132,6 +132,8 @@ function Road(object3D, scenery) {
     ;
     this.rightRoadLine;
     this.leftRoadLine;
+    this.winningLaps = 4//the number of laps it takes to win
+    ;
     this.direction = 1//when positive means laps are clockwise and visversa
     ;
     //used to start and restart the game
@@ -645,6 +647,8 @@ function Motorcycle(playerNumb, position, fwdVector, road, buttons, viewport) {
             }
         }
     };
+    var finishingPlace;//the overall place they came in
+    
     this.drawOverlay = function () {
         var w = this.viewport.width;
         var h = this.viewport.height;
@@ -669,7 +673,16 @@ function Motorcycle(playerNumb, position, fwdVector, road, buttons, viewport) {
         }
         this.HUDCanvasContext.fillText(place, w - 60, 60);
         //lap
-        this.HUDCanvasContext.fillText('LAP ' + this.currentLap, 30, h - 30);
+        this.HUDCanvasContext.fillText('LAP ' + this.currentLap + '/' + road.winningLaps, 30, h - 30);
+        //winning screen
+        if(this.currentLap > road.winningLaps) {
+            if(!finishingPlace) {
+                finishingPlace = place;
+            }
+            this.HUDCanvasContext.fillStyle = "red";
+            this.HUDCanvasContext.font = "bold 102px Arial";
+            this.HUDCanvasContext.fillText(finishingPlace + ' Place', 30, h - 30);
+        }
     };
     this.updateSpeed = function (timeDiff) {
         if(this.speed < this.maxSpeed) {
