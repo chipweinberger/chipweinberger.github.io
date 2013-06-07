@@ -17,7 +17,7 @@ var buttonStates = new Array();//the state of the keyboard buttons stored by key
 /*
 * The first thing that runs. Loads resources (images and obj files) into an array to be used later
 */
-var init = function () {
+function init() {
     //load relevant images
     var imgFilenames = [];
     for(var i = 0; i < imgFilenames.length; i++) {
@@ -35,19 +35,20 @@ var init = function () {
     //load relevant obj files
     var objFilenames = [
         'res/finalissuemapinside.obj', 
-        'res/Motorcycle.obj', 
-        'res/crashing car 3.obj', 
-        'finalbackgroundtrack.obj'
+        'res/Motorcycle.mtl', 
+        'res/finalissuemapinside.obj', 
+        'res/finalbackgroundtrack.mtl'
     ];
     for(var j = 0; j < objFilenames.length; j++) {
         objIsLoadedArray[j] = false;
         loadObjFile(objFilenames[j], j);
     }
-};
+}
+;
 /*
 * Returns '1' if everything has been loaded. Returns a percentage otherwise
 */
-var loadedCompletionPercent = function () {
+function loadedCompletionPercent() {
     var numberOfThingsToLoad = imageIsLoadedArray.length + objIsLoadedArray.length;
     var thingsLoaded = 0;
     for(var j = 0; j < imageIsLoadedArray.length; j++) {
@@ -61,11 +62,11 @@ var loadedCompletionPercent = function () {
         }
     }
     return thingsLoaded / numberOfThingsToLoad;
-};
+}
 /*
 * The real initiation function.
 */
-var init2 = function () {
+function init2() {
     //makes sure everyting is loaded before actually executing init2
     if(loadedCompletionPercent() !== 1) {
         return;
@@ -82,21 +83,23 @@ var init2 = function () {
     object3DObjects[2].scale = new THREE.Vector3(.0015, .0015, .0015);
     road = new Road(object3DObjects[0], object3DObjects[3]);
     var lastRand;
-    for(var g = 0; g < 110; g++) {
-        var rand = Math.random() * .01;
-        var rand2 = Math.random() * 3;
+    for(var g = 0; g < 90; g++) {
+        var rand = Math.random() * .00;
+        var rand2 = Math.floor(Math.random() * 3) + .1;
         while(lastRand == rand2) {
-            rand2 = Math.random() * 3;
+            rand2 = Math.floor(Math.random() * 3) + .1;
         }
         lastRand = rand2;
-        road.addVehicle(new Vehicle(g / 110 + rand, .005, rand2, new THREE.Mesh(new THREE.CubeGeometry(.05, .05, .05), new THREE.MeshLambertMaterial(0xffff00))));
+        road.addVehicle(new Vehicle(g / 90 + rand, .005, rand2, new THREE.Mesh(new THREE.CubeGeometry(.05, .05, .05), new THREE.MeshLambertMaterial(0xffff00))));
     }
     road.start(2)//the number of players
     ;
     //lights
     var light = new THREE.PointLight(0xffffff, 1, 1000);
-    light.position.set(0, 50, 0);
+    light.position.set(0, 2, 0);
     scene.add(light);
+    var alight = new THREE.AmbientLight(0xb0b0b0);
+    scene.add(alight);
     gamepadSupportAvailible = !!navigator.webkitGetGamepads || !!navigator.webkitGamepads;
     if(gamepadSupportAvailible) {
         gamepads = navigator.webkitGetGamepads();
@@ -109,8 +112,9 @@ var init2 = function () {
         buttonStates[event.keyCode] = false;
     });
     render();
-};
-var Road = function (object3D, scenery) {
+}
+;
+function Road(object3D, scenery) {
     this.startingIndex = 80//the index the motos start at
     ;
     this.numPlayers;
@@ -312,12 +316,10 @@ var Road = function (object3D, scenery) {
             }
         }
     };
-    var count = 0;
     this.updatePlaces = function () {
         //update places works by assiging each moto a number that characterizes its current lap, nearest index on the road, and distance to the next road vertex
         //these numbers with their motos are then added to an array and sorted.
         var places = new Array();
-        count++;
         for(var i = 0; i < this.motorcycles.length; i++) {
             var map1 = (1 - 1 / (this.motorcycles[i].distToNextRoadIndex + 1));//maps distToNextRoadIndex to 0-1, smaller numbers are closer to 1
             
@@ -330,9 +332,6 @@ var Road = function (object3D, scenery) {
                 map2 = ((this.motorcycles[i].nearestRoadIndex + 1) * 10) / road.middleRoadLine.geometry.vertices.length;
             }//maps 1-10
             
-            if(count % 60 === 0) {
-                console.log(this.motorcycles[i].nearestRoadIndex, map2);
-            }
             var total = (this.motorcycles[i].currentLap * 20) + map2 + map1;
             places.push({
                 index: i,
@@ -383,7 +382,7 @@ var Road = function (object3D, scenery) {
         return new THREE.Line(centerPointsGeometry);
     };
     this.init(object3D, scenery);
-};
+}
 function Motorcycle(playerNumb, position, fwdVector, road, buttons, viewport) {
     this.HUDCanvasContext;
     this.viewport = viewport//has four properties: left, bottom,width,height;
@@ -407,7 +406,7 @@ function Motorcycle(playerNumb, position, fwdVector, road, buttons, viewport) {
     this.speed = 0.0;
     this.lean = 0//the lean determines if the motorcycle is turning or not.
     ;
-    this.maxLean = 20//the amount the motorcycle can lean Left or right.
+    this.maxLean = 16//the amount the motorcycle can lean Left or right.
     ;
     this.turnSpeed = .0019//how fast you can turn as a ratio to the amount of lean
     ;
@@ -467,7 +466,7 @@ function Motorcycle(playerNumb, position, fwdVector, road, buttons, viewport) {
         var timeDifference = this.timeSinceLastUpdate();
         //forwardVector updates
         var surfaceNormal = road.roadHeightMap.getTerrainNormal(this.position.x, this.position.z);
-        this.forwardVector.applyMatrix4(new THREE.Matrix4().rotateY(-this.lean * this.turnSpeed))//turn the vector
+        this.forwardVector.applyMatrix4(new THREE.Matrix4().makeRotationY(-this.lean * this.turnSpeed))//turn the vector
         ;
         //moto location updates
         var theta = 0;//the amount the moto has to turn before being on the track;initially zero.
@@ -477,7 +476,7 @@ function Motorcycle(playerNumb, position, fwdVector, road, buttons, viewport) {
         while(!position.y) {
             //if we went off the map, try turning the motorcycle (both ways)  until we are back on track
             var scaledFwdVec = scaledForwardVector.clone();
-            scaledFwdVec.applyMatrix4(new THREE.Matrix4().rotateY(theta))//rotate according to theta
+            scaledFwdVec.applyMatrix4(new THREE.Matrix4().makeRotationY(theta))//rotate according to theta
             ;
             position = this.position.clone();
             position = position.add(scaledFwdVec)//move to new position
@@ -498,7 +497,7 @@ function Motorcycle(playerNumb, position, fwdVector, road, buttons, viewport) {
                 }
             }
         }
-        this.forwardVector.applyMatrix4(new THREE.Matrix4().rotateY(theta))//update the real fwdVector
+        this.forwardVector.applyMatrix4(new THREE.Matrix4().makeRotationY(theta))//update the real fwdVector
         ;
         this.position = position;
         this.motoMesh.position.z = this.position.z;
@@ -532,7 +531,7 @@ function Motorcycle(playerNumb, position, fwdVector, road, buttons, viewport) {
         this.motoCamera.position.x = this.position.x + relCamPos.x;
         this.motoCamera.position.y = this.position.y + relCamPos.y;
         this.motoCamera.position.z = this.position.z + relCamPos.z;
-        this.motoCamera.up = surfaceNormal.applyMatrix4(new THREE.Matrix4().rotateByAxis(this.forwardVector, THREE.Math.degToRad(this.lean / 2)));
+        this.motoCamera.up = surfaceNormal.applyMatrix4(new THREE.Matrix4().makeRotationAxis(this.forwardVector, THREE.Math.degToRad(this.lean / 2)));
         this.motoCamera.lookAt(new THREE.Vector3(this.position.x, this.position.y, this.position.z))//update lookAt position
         ;
         //for determining placing
@@ -588,9 +587,9 @@ function Motorcycle(playerNumb, position, fwdVector, road, buttons, viewport) {
         var h = this.viewport.height;
         this.HUDCanvasContext.clearRect(0, 0, w, h);
         this.HUDCanvasContext.fillStyle = "blue";
-        this.HUDCanvasContext.font = "bold 16px Arial";
+        this.HUDCanvasContext.font = "bold 32px Arial";
         //speed
-        this.HUDCanvasContext.fillText(Math.floor(this.speed * 4000) + 'mph', 30, 30);
+        this.HUDCanvasContext.fillText(Math.floor(this.speed * 4000) + 'mph', 30, 60);
         //place
         var place;
         if(this.currentPlace === 1) {
@@ -605,13 +604,17 @@ function Motorcycle(playerNumb, position, fwdVector, road, buttons, viewport) {
         if(this.currentPlace === 4) {
             place = '4th';
         }
-        this.HUDCanvasContext.fillText(place, w - 30, 30);
+        this.HUDCanvasContext.fillText(place, w - 60, 60);
         //lap
         this.HUDCanvasContext.fillText('LAP ' + this.currentLap, 30, h - 30);
     };
     this.updateSpeed = function (timeDiff) {
         if(this.speed < this.maxSpeed) {
-            this.speed += .00005 * timeDiff / 16;
+            if(this.speed > .003) {
+                this.speed += (.00005 * ((this.maxSpeed / 3) / Math.abs(this.speed))) * timeDiff / 16;
+            } else {
+                this.speed += .00005 * timeDiff / 16;
+            }
         }
     };
     this.turnVelocity = 0;
@@ -762,7 +765,7 @@ function Vehicle(startingPercentage, speed, direction, object3d) {
 * A heightmap can be loaded from an image resource, or a THREE.Geometry resource.
 * The generateHeightMapFromBMP or generateHeightMapFromGeometry function must be called before using the heightmap
 */
-var heightMap = function () {
+function heightMap() {
     this.location//the bottom left corner location of the heightmap
     ;
     this.gridArray//2d Array for the heightmap
@@ -952,7 +955,7 @@ var heightMap = function () {
         }
         return new THREE.Vector4(maxX, maxZ, minX, minZ);
     };
-};
+}
 var utils = {
     getGeometryFromObject3d: //A crude way of getting the geometry object from an Object3d.  Only gets the geometry of the first child however.
     function (obj) {
@@ -1013,25 +1016,38 @@ var utils = {
         return p;
     }
 };
-var loadObjFile = function (filename, index) {
-    var loader = new THREE.OBJLoader();
+function loadObjFile(filename, index) {
+    var loader;
+    if(filename.lastIndexOf('mtl') === filename.length - 3) {
+        loader = new THREE.OBJMTLLoader();
+    } else {
+        loader = new THREE.OBJLoader();
+    }
     loader.index = index;
-    this.loaderCallBack = function (object) {
+    loader.addEventListener('load', function (event) {
+        var object = event.content;//event.content;
+        
         object.traverse(function (child) {
             if(child instanceof THREE.Mesh) {
-                //child.material.map = texture;
+                // child.material.map = texture;
                             }
         });
         object3DObjects[loader.index] = object;
         objIsLoadedArray[loader.index] = true;
         init2();
-    };
-    loader.load(filename, this.loaderCallBack);
-};
-var render = function () {
+    });
+    if(filename.lastIndexOf('mtl') === filename.length - 3) {
+        loader.load(filename.replace('mtl', 'obj'), filename);
+    } else {
+        loader.load(filename);
+    }
+}
+;
+function render() {
     requestAnimationFrame(render);
     road.render();
     road.update();
-};
+}
+;
 init();
 //@ sourceMappingURL=app.js.map

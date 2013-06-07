@@ -1,0 +1,39 @@
+#
+## Alias OBJ Material File
+# Exported from SketchUp, (c) 2000-2012 Trimble Navigation Limited
+
+newmtl us_police_car_bo1
+Ka 0.000000 0.000000 0.000000
+Kd 0.270588 0.262745 0.278431
+Ks 0.330000 0.330000 0.330000
+map_Kd us_police_car/us_police_car_bo1.jpg
+
+newmtl FrontColor
+Ka 0.000000 0.000000 0.000000
+Kd 1.000000 1.000000 1.000000
+Ks 0.330000 0.330000 0.330000
+
+newmtl glass1
+Ka 0.000000 0.000000 0.000000
+Kd 0.000000 0.000000 0.000000
+Ks 0.330000 0.330000 0.330000
+d 0.300000
+
+newmtl plates_us1
+Ka 0.000000 0.000000 0.000000
+Kd 0.588235 0.635294 0.686275
+Ks 0.330000 0.330000 0.330000
+map_Kd us_police_car/plates_us1.jpg
+
+newmtl saloon_wheel1
+Ka 0.000000 0.000000 0.000000
+Kd 0.149020 0.149020 0.149020
+Ks 0.330000 0.330000 0.330000
+map_Kd us_police_car/saloon_wheel1.jpg
+
+newmtl chassis_gen1
+Ka 0.000000 0.000000 0.000000
+Kd 0.149020 0.152941 0.145098
+Ks 0.330000 0.330000 0.330000
+map_Kd us_police_car/chassis_gen1.jpg
+
