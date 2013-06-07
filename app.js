@@ -36,7 +36,7 @@ function init() {
     var objFilenames = [
         'res/finalissuemapinside.obj', 
         'res/Motorcycle.mtl', 
-        'res/finalissuemapinside.obj', 
+        'res/LP Car.mtl', 
         'res/finalbackgroundtrack.mtl'
     ];
     for(var j = 0; j < objFilenames.length; j++) {
@@ -80,17 +80,17 @@ function init2() {
     document.body.appendChild(renderer.domElement);
     //road
     object3DObjects[1].scale = new THREE.Vector3(.0003, .0003, .0003);
-    object3DObjects[2].scale = new THREE.Vector3(.0015, .0015, .0015);
+    object3DObjects[2].scale = new THREE.Vector3(.07, .07, .07);
     road = new Road(object3DObjects[0], object3DObjects[3]);
     var lastRand;
-    for(var g = 0; g < 90; g++) {
+    for(var g = 0; g < 115; g++) {
         var rand = Math.random() * .00;
         var rand2 = Math.floor(Math.random() * 3) + .1;
         while(lastRand == rand2) {
             rand2 = Math.floor(Math.random() * 3) + .1;
         }
         lastRand = rand2;
-        road.addVehicle(new Vehicle(g / 90 + rand, .005, rand2, new THREE.Mesh(new THREE.CubeGeometry(.05, .05, .05), new THREE.MeshLambertMaterial(0xffff00))));
+        road.addVehicle(new Vehicle(g / 115 + rand, .005, rand2, new THREE.Mesh(new THREE.CubeGeometry(.05, .05, .05), new THREE.MeshLambertMaterial(0xffff00))));
     }
     road.start(2)//the number of players
     ;
@@ -98,8 +98,8 @@ function init2() {
     var light = new THREE.PointLight(0xffffff, 1, 1000);
     light.position.set(0, 2, 0);
     scene.add(light);
-    var alight = new THREE.AmbientLight(0xb0b0b0);
-    scene.add(alight);
+    var alight = new THREE.AmbientLight(0x808080);
+    //scene.add(alight);
     gamepadSupportAvailible = !!navigator.webkitGetGamepads || !!navigator.webkitGamepads;
     if(gamepadSupportAvailible) {
         gamepads = navigator.webkitGetGamepads();
@@ -136,6 +136,15 @@ function Road(object3D, scenery) {
     ;
     //used to start and restart the game
     this.start = function (numPlayers) {
+        //remove any old motos
+        for(var i = 0; i < this.motorcycles.length; i++) {
+            this.motorcycles[i].remove();
+        }
+        startTime = null//will get set to a new value when calling startingAnimation()
+        ;
+        startingAnimation = true//make sure we set it to display the 3,2,1 countdown when we start updating the road.
+        ;
+        this.numPlayers = numPlayers;
         this.motorcycles = new Array();
         var startIndex = this.startingIndex;
         var fwdVector = utils.fwdVectorFromLine(this.middleRoadLine, startIndex, this.direction);
@@ -146,20 +155,20 @@ function Road(object3D, scenery) {
         var h = window.innerHeight;
         if(numPlayers === 4) {
             this.addMoto(new Motorcycle(0, rightRd, fwdVector, this, [
-                37, 
-                39
+                65, 
+                68
             ], {
                 left: 0,
-                top: h / 2,
+                top: 0,
                 width: w / 2,
                 height: h / 2
             }));
             this.addMoto(new Motorcycle(1, midRd, fwdVector, this, [
-                65, 
-                68
+                37, 
+                39
             ], {
                 left: w / 2,
-                top: h / 2,
+                top: 0,
                 width: w / 2,
                 height: h / 2
             }));
@@ -168,7 +177,7 @@ function Road(object3D, scenery) {
                 76
             ], {
                 left: 0,
-                top: 0,
+                top: h / 2,
                 width: w / 2,
                 height: h / 2
             }));
@@ -177,27 +186,27 @@ function Road(object3D, scenery) {
                 72
             ], {
                 left: w / 2,
-                top: 0,
+                top: h / 2,
                 width: w / 2,
                 height: h / 2
             }));
         } else {
             if(numPlayers === 3) {
                 this.addMoto(new Motorcycle(0, rightRd, fwdVector, this, [
-                    37, 
-                    39
+                    65, 
+                    68
                 ], {
                     left: 0,
-                    top: h / 2,
+                    top: 0,
                     width: w / 2,
                     height: h / 2
                 }));
                 this.addMoto(new Motorcycle(1, midRd, fwdVector, this, [
-                    65, 
-                    68
+                    37, 
+                    39
                 ], {
                     left: w / 2,
-                    top: h / 2,
+                    top: 0,
                     width: w / 2,
                     height: h / 2
                 }));
@@ -206,15 +215,15 @@ function Road(object3D, scenery) {
                     76
                 ], {
                     left: 0,
-                    top: 0,
+                    top: h / 2,
                     width: w / 2,
                     height: h / 2
                 }));
             } else {
                 if(numPlayers === 2) {
                     this.addMoto(new Motorcycle(0, rightRd, fwdVector, this, [
-                        37, 
-                        39
+                        65, 
+                        68
                     ], {
                         left: 0,
                         top: 0,
@@ -222,8 +231,8 @@ function Road(object3D, scenery) {
                         height: h
                     }));
                     this.addMoto(new Motorcycle(1, leftRd, fwdVector, this, [
-                        65, 
-                        68
+                        37, 
+                        39
                     ], {
                         left: w / 2,
                         top: 0,
@@ -257,9 +266,14 @@ function Road(object3D, scenery) {
             var l = this.motorcycles[i].viewport.left;
             var w = this.motorcycles[i].viewport.width;
             var h = this.motorcycles[i].viewport.height;
-            var t = this.motorcycles[i].viewport.top;
-            renderer.setViewport(l, t, w, h);
-            renderer.setScissor(l, t, w, h);
+            if(this.numPlayers > 2) {
+                //accounts for the fact that three.js has 0,0 at the bottom left
+                var bottom = Math.abs(this.motorcycles[i].viewport.top - h);
+            } else {
+                var bottom = this.motorcycles[i].viewport.top;
+            }
+            renderer.setViewport(l, bottom, w, h);
+            renderer.setScissor(l, bottom, w, h);
             renderer.enableScissorTest(true);
             renderer.render(scene, this.motorcycles[i].motoCamera);
         }
@@ -273,7 +287,7 @@ function Road(object3D, scenery) {
         this.roadGeometry = utils.getGeometryFromObject3d(object3D);
         this.roadHeightMap = new heightMap();
         this.roadHeightMap.generateHeightMapFromGeometry(this.roadGeometry, 4000, 4000);
-        scene.add(this.roadObject3D);
+        //scene.add(this.roadObject3D);
         scene.add(this.scenery);
         this.middleRoadLine = this.lineFromRoadGeometry(this.roadGeometry, 0);
         this.leftRoadLine = this.lineFromRoadGeometry(this.roadGeometry, -.075);
@@ -283,33 +297,37 @@ function Road(object3D, scenery) {
         scene.add(this.rightRoadLine);
     };
     this.update = function () {
-        if(!this.paused) {
-            for(var i = 0; i < this.vehicles.length; i++) {
-                this.vehicles[i].update();
+        if(startingAnimation) {
+            this.startingAnimation();
+        } else {
+            if(!this.paused) {
+                for(var i = 0; i < this.vehicles.length; i++) {
+                    this.vehicles[i].update();
+                }
+                for(var j = 0; j < this.motorcycles.length; j++) {
+                    this.motorcycles[j].update();
+                }
             }
-            for(var j = 0; j < this.motorcycles.length; j++) {
-                this.motorcycles[j].update();
-            }
+            //collisions
+            this.checkCollisons();
+            //places
+            this.updatePlaces();
         }
-        //collisions
-        this.checkCollisons();
-        //places
-        this.updatePlaces();
     };
     this.checkCollisons = function () {
         for(var i = 0; i < this.vehicles.length; i++) {
-            this.vehicles[i].geometry.geometry.computeBoundingBox();
-            var bb1 = this.vehicles[i].geometry.geometry.boundingBox;
-            bb1.translate(this.vehicles[i].currentPosition.x, this.vehicles[i].currentPosition.y, this.vehicles[i].currentPosition.z);
-            bb1 = new THREE.Box3().setFromCenterAndSize(this.vehicles[i].currentPosition, .05);
+            //this.vehicles[i].geometry.geometry.computeBoundingBox();
+            //var bb1 = this.vehicles[i].geometry.geometry.boundingBox;
+            //bb1.translate(this.vehicles[i].currentPosition.x, this.vehicles[i].currentPosition.y, this.vehicles[i].currentPosition.z);
+            //bb1 = new THREE.Box3().setFromCenterAndSize(this.vehicles[i].currentPosition, .05);
             for(var j = 0; j < this.motorcycles.length; j++) {
-                this.motorcycles[j].geometry.computeBoundingBox();
-                var bb2 = this.motorcycles[j].geometry.boundingBox;
-                bb2.translate(this.motorcycles[j].position.x, this.motorcycles[j].position.y, this.motorcycles[j].position.z);
-                bb1 = new THREE.Box3().setFromCenterAndSize(this.motorcycles[j].position, .05);
-                if(bb1.isIntersectionBox(bb2)) {
-                    this.motorcycles[j].speed = -this.motorcycles[j].speed;
-                }
+                //this.motorcycles[j].geometry.computeBoundingBox();
+                //var bb2 = this.motorcycles[j].geometry.boundingBox;
+                //bb2.translate(this.motorcycles[j].position.x, this.motorcycles[j].position.y, this.motorcycles[j].position.z);
+                //bb1 = new THREE.Box3().setFromCenterAndSize(this.motorcycles[j].position, .05);
+                //if (bb1.isIntersectionBox(bb2)) {
+                //    this.motorcycles[j].speed = -this.motorcycles[j].speed;
+                //}
                 if(this.motorcycles[j].position.distanceTo(this.vehicles[i].currentPosition) < .03) {
                     this.motorcycles[j].speed = this.motorcycles[j].speed / 2;
                 }
@@ -358,6 +376,35 @@ function Road(object3D, scenery) {
     this.addMoto = function (moto) {
         this.motorcycles.push(moto);
     };
+    var startingAnimation = true;//the 3,2,1 countdown
+    
+    var startTime;//used for countdown
+    
+    this.startingAnimation = function () {
+        if(!startTime) {
+            for(var j = 0; j < this.motorcycles.length; j++) {
+                this.motorcycles[j].update();
+            }//update once so we are at the start line
+            
+            startTime = new Date().getSeconds();
+        }
+        var diff = (new Date().getSeconds()) - startTime;
+        if(diff > 2) {
+            startingAnimation = false;
+        } else {
+            for(var i = 0; i < this.motorcycles.length; i++) {
+                var moto = this.motorcycles[i];
+                var w = moto.viewport.width;
+                var h = moto.viewport.height;
+                moto.HUDCanvasContext.clearRect(0, 0, w, h);
+                moto.HUDCanvasContext.fillStyle = "red";
+                moto.HUDCanvasContext.font = "bold 104px Arial";
+                moto.HUDCanvasContext.fillText(3 - diff, w / 2, h / 2);
+                moto.lastTimeUpdated = new Date().getTime()//makes sure the motorcycle timer hasn't started yet
+                ;
+            }
+        }
+    };
     /*
     * Makes a line from the road geometry (for the other vehicles to follow).  Assumes the faces of the road are listed in order.
     * A positive offset will make the line slightly to the right of the road, and vis-versa
@@ -385,6 +432,8 @@ function Road(object3D, scenery) {
 }
 function Motorcycle(playerNumb, position, fwdVector, road, buttons, viewport) {
     this.HUDCanvasContext;
+    this.canvId//id of the canvas
+    ;
     this.viewport = viewport//has four properties: left, bottom,width,height;
     ;
     this.right//the keycode that is the right button
@@ -421,7 +470,6 @@ function Motorcycle(playerNumb, position, fwdVector, road, buttons, viewport) {
     ;
     this.distToNextRoadIndex//used for determining the place
     ;
-    this.lastTimeUpdated = new Date().getTime();
     this.init = function (buttons) {
         this.motoMesh.position.set(this.position.x, road.roadHeightMap.getHeight(this.position.x, this.position.z), this.position.z);
         var surfaceNormal = road.roadHeightMap.getTerrainNormal(this.position.x, this.position.z);
@@ -429,6 +477,7 @@ function Motorcycle(playerNumb, position, fwdVector, road, buttons, viewport) {
         //create heads up display canvas
         var canv = document.createElement('canvas');
         canv.id = 'headsUpDisplayPlayer' + this.playerNumber;
+        this.canvId = canv.id;
         canv.width = this.viewport.width;
         canv.height = this.viewport.height;
         canv.style.position = 'absolute';
@@ -438,7 +487,20 @@ function Motorcycle(playerNumb, position, fwdVector, road, buttons, viewport) {
         document.body.appendChild(canv);
         this.HUDCanvasContext = canv.getContext("2d");
         var aspectRatio = this.viewport.width / this.viewport.height;
-        this.motoCamera = new THREE.PerspectiveCamera(75, aspectRatio, .0001, 5);
+        var zfar;
+        if(road.numPlayers === 1) {
+            zfar = 30;
+        }
+        if(road.numPlayers === 2) {
+            zfar = 8;
+        }
+        if(road.numPlayers === 3) {
+            zfar = 3;
+        }
+        if(road.numPlayers === 4) {
+            zfar = 1.5;
+        }
+        this.motoCamera = new THREE.PerspectiveCamera(75, aspectRatio, .0001, zfar);
         for(var i = 0; i < buttons.length; i++) {
             var keycode;
             if(typeof buttons[i] === 'number') {
@@ -455,6 +517,7 @@ function Motorcycle(playerNumb, position, fwdVector, road, buttons, viewport) {
         }
         this.geometry = utils.getGeometryFromObject3d(this.motoMesh);
     };
+    this.lastTimeUpdated = new Date().getTime();
     this.timeSinceLastUpdate = function () {
         var currentTime = new Date().getTime();
         var difference = currentTime - this.lastTimeUpdated;
@@ -629,7 +692,7 @@ function Motorcycle(playerNumb, position, fwdVector, road, buttons, viewport) {
                     this.lean += this.leanSpeed * .55 * timeDif / 16;
                 }
             } else {
-                if(Math.abs(this.lean) >= 3) {
+                if(Math.abs(this.lean) >= 5) {
                     if(this.lean > 0) {
                         this.lean -= this.leanSpeed / .9 * timeDif / 16;
                     } else {
@@ -652,6 +715,12 @@ function Motorcycle(playerNumb, position, fwdVector, road, buttons, viewport) {
         } else {
             gamepads = navigator.webkitGetGamepads();
         }
+    };
+    this.remove = function () {
+        var elm = document.getElementById(this.canvId);
+        var parent = elm.parentNode;
+        parent.removeChild(elm);
+        scene.remove(this.motoMesh);
     };
     this.init(buttons);
 }
@@ -705,8 +774,7 @@ function Vehicle(startingPercentage, speed, direction, object3d) {
     this.update = function () {
         var timeDifference = this.timeSinceLastUpdate();
         //move forward
-        var amountForward = this.speed;//* timeDifference / 16;
-        
+        var amountForward = this.speed * timeDifference / 16;
         this.distanceFromLastVertex += Math.abs(amountForward);
         //if we havent passed the next vertex of the line segment yet
         if(this.distanceFromLastVertex < this.distanceBetweenVertices) {
