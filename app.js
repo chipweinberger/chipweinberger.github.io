@@ -568,7 +568,7 @@ function Motorcycle(playerNumb, position, fwdVector: THREE.Vector3, road, button
         } else {
             if (buttonStates[this.right] && !buttonStates[this.left]) {
                 if (this.lean < this.maxLean) {
-                    this.lean += this.leanSpeed * .55 * timeDif / 16;
+                    this.lean += this.leanSpeed * .55 * timeDif / 16 / (1.4);
                 }
             } else {
                 if (Math.abs(this.lean) >= 5) {
@@ -587,9 +587,9 @@ function Motorcycle(playerNumb, position, fwdVector: THREE.Vector3, road, button
         if (this.lean < -this.maxLean)
             this.lean = -this.maxLean;
         //gamepad support
-        if (gamepads[this.playerNumber]) {
-            this.lean = gamepads[this.playerNumber].axes[0] * this.maxLean/(1.55);
-        } else
+        if (gamepads[this.playerNumber])
+            this.lean = gamepads[this.playerNumber].axes[0] * this.maxLean;
+        else
             gamepads = navigator.webkitGetGamepads();
     };
     this.remove = function () {
