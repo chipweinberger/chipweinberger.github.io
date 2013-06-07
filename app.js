@@ -653,10 +653,12 @@ function Motorcycle(playerNumb, position, fwdVector, road, buttons, viewport) {
         var w = this.viewport.width;
         var h = this.viewport.height;
         this.HUDCanvasContext.clearRect(0, 0, w, h);
-        this.HUDCanvasContext.fillStyle = "blue";
+        this.HUDCanvasContext.fillStyle = "white";
         this.HUDCanvasContext.font = "bold 32px Arial";
         //speed
         this.HUDCanvasContext.fillText(Math.floor(this.speed * 4000) + 'mph', 30, 60);
+        this.HUDCanvasContext.fillStyle = "blue";
+        this.HUDCanvasContext.fillText(Math.floor(this.speed * 4000) + 'mph', 32, 62);
         //place
         var place;
         if(this.currentPlace === 1) {
@@ -671,9 +673,15 @@ function Motorcycle(playerNumb, position, fwdVector, road, buttons, viewport) {
         if(this.currentPlace === 4) {
             place = '4th';
         }
+        this.HUDCanvasContext.fillStyle = "white";
         this.HUDCanvasContext.fillText(place, w - 60, 60);
+        this.HUDCanvasContext.fillStyle = "blue";
+        this.HUDCanvasContext.fillText(place, w - 58, 58);
         //lap
+        this.HUDCanvasContext.fillStyle = "white";
         this.HUDCanvasContext.fillText('LAP ' + this.currentLap + '/' + road.winningLaps, 30, h - 30);
+        this.HUDCanvasContext.fillStyle = "blue";
+        this.HUDCanvasContext.fillText('LAP ' + this.currentLap + '/' + road.winningLaps, 32, h - 28);
         //winning screen
         if(this.currentLap > road.winningLaps) {
             if(!finishingPlace) {
