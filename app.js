@@ -142,7 +142,7 @@ function Road(object3D, scenery) {
         for(var i = 0; i < this.motorcycles.length; i++) {
             this.motorcycles[i].remove();
         }
-        startTime = null//will get set to a new value when calling startingAnimation()
+        this.startTime = null//will get set to a new value when calling startingAnimation()
         ;
         startingAnimation = true//make sure we set it to display the 3,2,1 countdown when we start updating the road.
         ;
@@ -243,7 +243,7 @@ function Road(object3D, scenery) {
                     }));
                 } else {
                     if(numPlayers === 1) {
-                        this.addMoto(new Motorcycle(0, midRd, fwdVector, this, [
+                        this.addMoto(new Motorcycle(1, midRd, fwdVector, this, [
                             37, 
                             39
                         ], {
@@ -380,18 +380,18 @@ function Road(object3D, scenery) {
     };
     var startingAnimation = true;//the 3,2,1 countdown
     
-    var startTime;//used for countdown
-    
+    this.startTime//used for countdown
+    ;
     this.startingAnimation = function () {
-        if(!startTime) {
+        if(!this.startTime) {
+            this.startTime = new Date();
             for(var j = 0; j < this.motorcycles.length; j++) {
                 this.motorcycles[j].update();
             }//update once so we are at the start line
             
-            startTime = new Date().getSeconds();
         }
-        var diff = (new Date().getSeconds()) - startTime;
-        if(diff > 2) {
+        var diff = new Date().getTime() - this.startTime.getTime();
+        if(diff > 3000) {
             startingAnimation = false;
         } else {
             for(var i = 0; i < this.motorcycles.length; i++) {
@@ -401,7 +401,7 @@ function Road(object3D, scenery) {
                 moto.HUDCanvasContext.clearRect(0, 0, w, h);
                 moto.HUDCanvasContext.fillStyle = "red";
                 moto.HUDCanvasContext.font = "bold 104px Arial";
-                moto.HUDCanvasContext.fillText(3 - diff, w / 2, h / 2);
+                moto.HUDCanvasContext.fillText(3 - Math.floor(diff / 1000), w / 2, h / 2);
                 moto.lastTimeUpdated = new Date().getTime()//makes sure the motorcycle timer hasn't started yet
                 ;
             }
@@ -647,6 +647,7 @@ function Motorcycle(playerNumb, position, fwdVector, road, buttons, viewport) {
             }
         }
     };
+    var finishingTime;
     var finishingPlace;//the overall place they came in
     
     this.drawOverlay = function () {
@@ -654,7 +655,7 @@ function Motorcycle(playerNumb, position, fwdVector, road, buttons, viewport) {
         var h = this.viewport.height;
         this.HUDCanvasContext.clearRect(0, 0, w, h);
         this.HUDCanvasContext.fillStyle = "white";
-        this.HUDCanvasContext.font = "bold 32px Arial";
+        this.HUDCanvasContext.font = "bold 44px Arial";
         //speed
         this.HUDCanvasContext.fillText(Math.floor(this.speed * 4000) + 'mph', 30, 60);
         this.HUDCanvasContext.fillStyle = "blue";
@@ -674,22 +675,41 @@ function Motorcycle(playerNumb, position, fwdVector, road, buttons, viewport) {
             place = '4th';
         }
         this.HUDCanvasContext.fillStyle = "white";
-        this.HUDCanvasContext.fillText(place, w - 60, 60);
+        this.HUDCanvasContext.fillText(place, w - 80, 60);
         this.HUDCanvasContext.fillStyle = "blue";
-        this.HUDCanvasContext.fillText(place, w - 58, 58);
+        this.HUDCanvasContext.fillText(place, w - 78, 58);
         //lap
         this.HUDCanvasContext.fillStyle = "white";
         this.HUDCanvasContext.fillText('LAP ' + this.currentLap + '/' + road.winningLaps, 30, h - 30);
         this.HUDCanvasContext.fillStyle = "blue";
         this.HUDCanvasContext.fillText('LAP ' + this.currentLap + '/' + road.winningLaps, 32, h - 28);
+        //time
+        var now = new Date().getTime();
+        var start = road.startTime.getTime();
+        var time = new Date(now - start);
+        var milliseconds = time.getMilliseconds();
+        var seconds = time.getSeconds();
+        var minutes = time.getMinutes();
+        var displayTime = minutes + ':' + seconds + ':' + milliseconds;
+        this.HUDCanvasContext.fillStyle = "white";
+        this.HUDCanvasContext.fillText(displayTime, w - 200, h - 30);
+        this.HUDCanvasContext.fillStyle = "blue";
+        this.HUDCanvasContext.fillText(displayTime, w - 198, h - 28);
         //winning screen
         if(this.currentLap > road.winningLaps) {
             if(!finishingPlace) {
                 finishingPlace = place;
             }
+            if(!finishingTime) {
+                finishingTime = displayTime;
+            }
             this.HUDCanvasContext.fillStyle = "red";
             this.HUDCanvasContext.font = "bold 102px Arial";
             this.HUDCanvasContext.fillText(finishingPlace + ' Place', 30, h - 30);
+            this.HUDCanvasContext.fillText(finishingTime, 30, 110);
+        } else {
+            finishingPlace = null;
+            finishingTime = null;
         }
     };
     this.updateSpeed = function (timeDiff) {
