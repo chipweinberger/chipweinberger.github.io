@@ -104,7 +104,7 @@ function init2() {
         
         road.addVehicle(new Vehicle(g / 100 + rand, .009, rand2, object3DObjects[rand3]));
     }
-    road.start(2)//the number of players
+    road.start(1)//the number of players
     ;
     //lights
     var light = new THREE.PointLight(0xffffff, 1, 1000);
