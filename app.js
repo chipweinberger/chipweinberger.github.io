@@ -36,8 +36,13 @@ function init() {
     var objFilenames = [
         'res/finalissuemapinside.obj', 
         'res/Motorcycle.mtl', 
-        'res/LP Car.mtl', 
-        'res/finalbackgroundtrack.mtl'
+        'res/kia rio.mtl', 
+        'res/finalbackgroundtrack.mtl', 
+        'res/kia rio red.mtl', 
+        'res/kia rio white.mtl', 
+        'res/kia rio silver.mtl', 
+        'res/kia rio blue.mtl', 
+        'res/kia rio yellow.mtl'
     ];
     for(var j = 0; j < objFilenames.length; j++) {
         objIsLoadedArray[j] = false;
@@ -78,28 +83,35 @@ function init2() {
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.domElement.setAttribute('z-index', '-1');
     document.body.appendChild(renderer.domElement);
+    //scale the cars
+    object3DObjects[1].scale = new THREE.Vector3(.00055, .0007, .00055);
+    for(var i = 4; i <= 8; i++) {
+        object3DObjects[i].scale = new THREE.Vector3(.007, .007, .007);
+    }
     //road
-    object3DObjects[1].scale = new THREE.Vector3(.0003, .0003, .0003);
-    object3DObjects[2].scale = new THREE.Vector3(.07, .07, .07);
     road = new Road(object3DObjects[0], object3DObjects[3]);
     var lastRand;
-    for(var g = 0; g < 115; g++) {
-        var rand = Math.random() * .00;
+    for(var g = 0; g < 100; g++) {
+        var rand = Math.random() * .00;//the position on the track
+        
         var rand2 = Math.floor(Math.random() * 3) + .1;
         while(lastRand == rand2) {
             rand2 = Math.floor(Math.random() * 3) + .1;
-        }
+        }//the lane the car is in
+        
         lastRand = rand2;
-        road.addVehicle(new Vehicle(g / 115 + rand, .005, rand2, new THREE.Mesh(new THREE.CubeGeometry(.05, .05, .05), new THREE.MeshLambertMaterial(0xffff00))));
+        var rand3 = Math.floor(Math.random() * 5) + 4;//determines the color of the car
+        
+        road.addVehicle(new Vehicle(g / 100 + rand, .009, rand2, object3DObjects[rand3]));
     }
     road.start(2)//the number of players
     ;
     //lights
     var light = new THREE.PointLight(0xffffff, 1, 1000);
     light.position.set(0, 2, 0);
-    scene.add(light);
-    var alight = new THREE.AmbientLight(0x808080);
-    //scene.add(alight);
+    // scene.add(light);
+    var alight = new THREE.AmbientLight(0xe0e0e0);
+    scene.add(alight);
     gamepadSupportAvailible = !!navigator.webkitGetGamepads || !!navigator.webkitGamepads;
     if(gamepadSupportAvailible) {
         gamepads = navigator.webkitGetGamepads();
@@ -447,19 +459,19 @@ function Motorcycle(playerNumb, position, fwdVector, road, buttons, viewport) {
     this.motoMesh = object3DObjects[1].clone();
     this.geometry;
     this.motoCamera;
-    this.relativeCameraPosition = new THREE.Vector3(0, .03, -.08)//the location of the camera relative to the motorcycle
+    this.relativeCameraPosition = new THREE.Vector3(0, .055, -.1)//the location of the camera relative to the motorcycle
     ;
     this.position = position.clone()//starting position
     ;
     this.forwardVector = fwdVector.clone().normalize()//The vector that the moto is going
     ;
-    this.maxSpeed = .015;
+    this.maxSpeed = .018;
     this.speed = 0.0;
     this.lean = 0//the lean determines if the motorcycle is turning or not.
     ;
-    this.maxLean = 16//the amount the motorcycle can lean Left or right.
+    this.maxLean = 18//the amount the motorcycle can lean Left or right.
     ;
-    this.turnSpeed = .0019//how fast you can turn as a ratio to the amount of lean
+    this.turnSpeed = .0017//how fast you can turn as a ratio to the amount of lean
     ;
     this.leanSpeed = 1.6;
     this.currentFaceNode;
@@ -597,7 +609,7 @@ function Motorcycle(playerNumb, position, fwdVector, road, buttons, viewport) {
         this.motoCamera.position.y = this.position.y + relCamPos.y;
         this.motoCamera.position.z = this.position.z + relCamPos.z;
         this.motoCamera.up = surfaceNormal.applyMatrix4(new THREE.Matrix4().makeRotationAxis(this.forwardVector, THREE.Math.degToRad(this.lean / 2)));
-        this.motoCamera.lookAt(new THREE.Vector3(this.position.x, this.position.y, this.position.z))//update lookAt position
+        this.motoCamera.lookAt(new THREE.Vector3(this.position.x, this.position.y + .01, this.position.z))//update lookAt position
         ;
         //for determining placing
         this.updateRoadPositions();
@@ -657,9 +669,9 @@ function Motorcycle(playerNumb, position, fwdVector, road, buttons, viewport) {
         this.HUDCanvasContext.fillStyle = "white";
         this.HUDCanvasContext.font = "bold 44px Arial";
         //speed
-        this.HUDCanvasContext.fillText(Math.floor(this.speed * 4000) + 'mph', 30, 60);
+        this.HUDCanvasContext.fillText(Math.floor(this.speed * 3000) + 'mph', 30, 60);
         this.HUDCanvasContext.fillStyle = "blue";
-        this.HUDCanvasContext.fillText(Math.floor(this.speed * 4000) + 'mph', 32, 62);
+        this.HUDCanvasContext.fillText(Math.floor(this.speed * 3000) + 'mph', 32, 62);
         //place
         var place;
         if(this.currentPlace === 1) {
@@ -812,6 +824,7 @@ function Vehicle(startingPercentage, speed, direction, object3d) {
     };
     this.distanceBetweenVertices;
     this.distanceFromLastVertex;
+    this.lastFwdVec;
     this.update = function () {
         var timeDifference = this.timeSinceLastUpdate();
         //move forward
@@ -827,7 +840,6 @@ function Vehicle(startingPercentage, speed, direction, object3d) {
             //if we did pass the next vertex
             var difference;//the amount we move past it
             
-            var iterations = 0;
             while(this.distanceFromLastVertex > this.distanceBetweenVertices) {
                 //we need to keep moving
                 this.currentVertexIndex = utils.nextVertexIndex(this.followLine, this.currentVertexIndex, this.speed)//move to the next vertex index
@@ -835,11 +847,6 @@ function Vehicle(startingPercentage, speed, direction, object3d) {
                 difference = this.distanceFromLastVertex - this.distanceBetweenVertices;
                 this.distanceBetweenVertices = this.followLine.geometry.vertices[this.currentVertexIndex].distanceTo(this.followLine.geometry.vertices[utils.nextVertexIndex(this.followLine, this.currentVertexIndex, this.speed)]);
                 this.distanceFromLastVertex = difference;
-                iterations++;
-                if(iterations > 10) {
-                    debugger;
-
-                }
             }
             //once we found out where we should be, set the parameters governing how the vehicle moves the next time update is called
             var currentVector = this.followLine.geometry.vertices[this.currentVertexIndex];
@@ -854,18 +861,17 @@ function Vehicle(startingPercentage, speed, direction, object3d) {
         //location updates
         this.vehicleMesh.position.z = this.currentPosition.z;
         this.vehicleMesh.position.x = this.currentPosition.x;
-        this.vehicleMesh.position.y = this.currentPosition.y;
-        //moto rotation updates
+        this.vehicleMesh.position.y = this.currentPosition.y - .005//account for the fact that the OBJ file is not at the origin
+        ;
+        // rotation updates
+        var rotatedFedVec = this.fwdVector.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);//account for the fact that the vehicle OBJ file is not facing fwd - annoying!
+        
+        var lookAt = new THREE.Vector3().addVectors(this.currentPosition, rotatedFedVec);
+        this.vehicleMesh.lookAt(lookAt);
+        //up direction
         var surfaceNormal = road.roadHeightMap.getTerrainNormal(this.currentPosition.x, this.currentPosition.z);
-        var xRotation = utils.angleBetweenVectors(surfaceNormal.projectOnPlane(new THREE.Vector3(1, 0, 0)), new THREE.Vector3(0, 1, 0));
-        var yRotation = 0;
-        var zRotation = 0;
-        this.vehicleMesh.rotation.x = 0//xRotation //pitch
-        ;
-        this.vehicleMesh.rotation.y = yRotation//yaw
-        ;
-        this.vehicleMesh.rotation.z = zRotation//roll
-        ;
+        var up = new THREE.Vector3().addVectors(this.currentPosition, surfaceNormal);
+        this.vehicleMesh.up = surfaceNormal;
     };
     this.init(startingPercentage, speed, direction, object3d);
 }
@@ -1138,7 +1144,7 @@ function loadObjFile(filename, index) {
         
         object.traverse(function (child) {
             if(child instanceof THREE.Mesh) {
-                // child.material.map = texture;
+                //child.material.map = texture;
                             }
         });
         object3DObjects[loader.index] = object;
