@@ -7,6 +7,7 @@ Level and Model Design: Jeremy Chase - jeremychase2015@u.northwestern.edu
 var scene, renderer;
 var scenery, road;
 var gamepadSupportAvailible, gamepads;
+var loadingTextElemtent;
 //stores resources and whether or not they have been loaded
 var imagesArray = new Array();
 var imageIsLoadedArray = new Array();
@@ -74,6 +75,8 @@ function loadedCompletionPercent() {
 function init2() {
     //makes sure everyting is loaded before actually executing init2
     if(loadedCompletionPercent() !== 1) {
+        console.log(loadedCompletionPercent());
+        console.log(new Date().getTime().toString());
         return;
     }
     //THREE.js boilerplate
@@ -312,6 +315,10 @@ function Road(object3D, scenery) {
     };
     this.update = function () {
         if(startingAnimation) {
+            for(var i = 0; i < this.vehicles.length; i++) {
+                this.vehicles[i].update();
+            }//still update the cars even on starting animation
+            
             this.startingAnimation();
         } else {
             if(!this.paused) {
@@ -763,10 +770,14 @@ function Motorcycle(playerNumb, position, fwdVector, road, buttons, viewport) {
             this.lean = -this.maxLean;
         }
         //gamepad support
-        if(gamepads[this.playerNumber]) {
-            this.lean = gamepads[this.playerNumber].axes[0] * this.maxLean;
+        if(gamepads) {
+            if(gamepads[this.playerNumber]) {
+                this.lean = gamepads[this.playerNumber].axes[0] * this.maxLean;
+            }
         } else {
-            gamepads = navigator.webkitGetGamepads();
+            if(navigator.webkitGetGamepads) {
+                gamepads = navigator.webkitGetGamepads();
+            }
         }
     };
     this.remove = function () {
