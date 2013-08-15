@@ -6,14 +6,12 @@
     Level and Model Design: Jeremy Chase - jeremychase2015@u.northwestern.edu
 */
 
-var scene: THREE.Scene, renderer: THREE.WebGLRenderer;
+var renderer: THREE.WebGLRenderer;
 var scenery: THREE.Mesh, road;
 var gamepadSupportAvailible, gamepads;
-var loadingTextNode;
 
 //stores resources and whether or not they have been loaded
-var imagesArray = new Array();
-var imageIsLoadedArray = new Array();
+var scene = new THREE.Scene();
 var object3DObjects = new Array();
 var objIsLoadedArray = new Array();
 
@@ -23,41 +21,68 @@ var buttonStates = new Array();//the state of the keyboard buttons stored by key
 * The first thing that runs. Loads resources (images and obj files) into an array to be used later
 */
 function init() {
-    loadingTextNode = document.createTextNode("Loading...");
 
 
-    //load relevant images
-    var imgFilenames = []
-    for (var i = 0; i < imgFilenames.length; i++) {
-        imageIsLoadedArray[i] = false;
-        var img = new Image();
-        img.src = imgFilenames[i];
-        img.tabIndex = i;//I would make a new variable here but typscript isnt letting me so im using tabIndex arbitrarily
-        img.onload = function () {
-            imagesArray[this.tabIndex] = this;
-            imageIsLoadedArray[this.tabIndex] = true;
-            init2();
-        }
-    }
     //load relevant obj files
     var objFilenames = ['res/finalissuemapinside.obj', 'res/Motorcycle.mtl', 'res/kia rio.mtl', 'res/finalbackgroundtrack.mtl',
          'res/kia rio red.mtl', 'res/kia rio white.mtl', 'res/kia rio silver.mtl', 'res/kia rio blue.mtl', 'res/kia rio yellow.mtl']
     for (var j = 0; j < objFilenames.length; j++) {
         objIsLoadedArray[j] = false
-        loadObjFile(objFilenames[j], j);
+        var scaleVector = new THREE.Vector3(1, 1, 1);
+        if (j === 0) 
+            var callback = roadIsLoadedCallback;
+        if (j === 3)
+            var callback = sceneryIsLoadedCallback;
+        if (j === 1)
+            scaleVector = new THREE.Vector3(.00055, .0007, .00055);
+        if (j >= 4 && j <= 8)
+            scaleVector = new THREE.Vector3(.007, .007, .007);
+        loadObjFile(objFilenames[j], j, scaleVector, callback);
     }
 };
+
+function loadObjFile(filename: string, index, scale: THREE.Vector3, callback) {
+    var loader;
+    if (filename.lastIndexOf('mtl') === filename.length - 3)
+        loader = new THREE.OBJMTLLoader();
+    else
+        loader = new THREE.OBJLoader();
+    loader.index = index;
+    loader.addEventListener('load', function (event) {
+        var object = event.content; //event.content;
+        object.traverse(function (child) {
+            if (child instanceof THREE.Mesh) {
+                //child.material.map = texture;
+            }
+        });
+        object.scale = scale;
+        object3DObjects[loader.index] = object;
+        if(callback)
+            callback(object3DObjects[loader.index]);
+        objIsLoadedArray[loader.index] = true;
+        init2();
+    });
+    if (filename.lastIndexOf('mtl') === filename.length - 3)
+        loader.load(filename.replace('mtl', 'obj'), filename);
+    else
+        loader.load(filename);
+};
+
+function roadIsLoadedCallback(object) {
+    //road = new Road(object);
+}
+
+function sceneryIsLoadedCallback(object) {
+    scene.add(object);
+}
+
 
 /* 
 * Returns '1' if everything has been loaded. Returns a percentage otherwise
 */
 function loadedCompletionPercent() {
-    var numberOfThingsToLoad = imageIsLoadedArray.length + objIsLoadedArray.length;
+    var numberOfThingsToLoad = objIsLoadedArray.length;
     var thingsLoaded = 0;
-    for (var j = 0; j < imageIsLoadedArray.length; j++) {
-        if (imageIsLoadedArray[j] === true)
-            thingsLoaded++;
-    }
     for (var jj = 0; jj < objIsLoadedArray.length; jj++) {
         if (objIsLoadedArray[jj] === true)
             thingsLoaded++;
@@ -71,55 +96,40 @@ interface Navigator {
     webkitGamepads: any;
 }
 
+var startedInit2 = false;
+
+function unhideControls() {
+    document.getElementById('controls').style.display = 'block';
+    document.getElementById('loading').style.display = 'none';
+}
 
 /* 
 * The real initiation function.
 */
 function init2() {
-    //makes sure everyting is loaded before actually executing init2
+
+    if (!startedInit2 && objIsLoadedArray[0]) {
+        road = new Road(object3DObjects[0]);
+        startedInit2 = true;
+    }
+
     if (loadedCompletionPercent() !== 1) {
         console.log(loadedCompletionPercent());
-        console.log(new Date().getTime().toString());
+        console.log("waiting for things to load");
         return;
     }
 
+
     //THREE.js boilerplate
-    scene = new THREE.Scene();
     renderer = new THREE.WebGLRenderer();
     renderer.setClearColor(new THREE.Color().setRGB(135/256, 206/256, 235/256), .8);
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.domElement.setAttribute('z-index', '-1');
     document.body.appendChild(renderer.domElement);
     
-
-    //scale the cars
-    object3DObjects[1].scale = new THREE.Vector3(.00055, .0007, .00055);
-    for (var i = 4; i <= 8; i++) {
-        object3DObjects[i].scale = new THREE.Vector3(.007, .007, .007);
-    }
-    //road
-    road = new Road(object3DObjects[0], object3DObjects[3]);
-    var lastRand;
-    for (var g = 0; g < 100; g++) {
-        var rand = Math.random() * .00;//the position on the track
-        var rand2 = Math.floor(Math.random() * 3) + .1;
-        while (lastRand == rand2)
-            rand2 = Math.floor(Math.random() * 3) + .1;//the lane the car is in
-        lastRand = rand2;
-        var rand3 = Math.floor(Math.random() * 5) + 4;//determines the color of the car
-        road.addVehicle(new Vehicle(g / 100 + rand, .009, rand2, object3DObjects[rand3]));
-    }
-    road.start(1);//the number of players
-
-
-    //lights
-    var light = new THREE.PointLight(0xffffff, 1, 1000);
-    light.position.set(0, 2, 0);
-   // scene.add(light);
-
+    //ambient light
     var alight = new THREE.AmbientLight(0xe0e0e0);
     scene.add(alight);
-
 
     gamepadSupportAvailible = !!navigator.webkitGetGamepads || !!navigator.webkitGamepads;
     if (gamepadSupportAvailible)
@@ -132,17 +142,34 @@ function init2() {
     document.addEventListener('keyup', function (event: KeyboardEvent) {
         buttonStates[event.keyCode] = false;
     });
+
+    //makes sure everyting is loaded before actually executing init2
+
+
+    //add cars
+    var lastRand;
+    for (var g = 0; g < 100; g++) {
+        var rand = Math.random() * .00;//randomness in the position on the track
+        var rand2 = Math.floor(Math.random() * 3) + .1;
+        while (lastRand == rand2)
+            rand2 = Math.floor(Math.random() * 3) + .1;//the lane the car is in
+        lastRand = rand2;
+        var rand3 = Math.floor(Math.random() * 5) + 4;//determines the color of the car
+        road.addVehicle(new Vehicle(g / 100 + rand, .009, rand2, object3DObjects[rand3]));
+    }
+
+
+    unhideControls();
     render();
 };
 
-function Road(object3D: THREE.Object3D, scenery: THREE.Object3D) {
+function Road(object3D: THREE.Object3D) {
     this.startingIndex = 80;//the index the motos start at
     this.numPlayers;
     this.vehicles = new Array();
     this.motorcycles = new Array();
     this.paused = true;
     this.roadObject3D;//the 3d model of the road. Must be continous. Faces must be listed in order.
-    this.scenery;//3d model of the scenery
     this.roadGeometry;//the geometry class from the roadObject3d class
     this.roadHeightMap;
     this.middleRoadLine;//THREE.Line class
@@ -213,21 +240,15 @@ function Road(object3D: THREE.Object3D, scenery: THREE.Object3D) {
     this.pause = function () {
         this.paused = !this.paused;
     }
-    this.init = function (object3D: THREE.Object3D,scenery:THREE.Object3D) {
+    this.init = function (object3D: THREE.Object3D) {
         this.roadObject3D = object3D;
-        this.scenery = scenery;
         this.roadGeometry = utils.getGeometryFromObject3d(object3D);
         this.roadHeightMap = new heightMap();
         this.roadHeightMap.generateHeightMapFromGeometry(this.roadGeometry, 4000, 4000);
-        //scene.add(this.roadObject3D);
-        scene.add(this.scenery);
 
         this.middleRoadLine = this.lineFromRoadGeometry(this.roadGeometry, 0);
         this.leftRoadLine = this.lineFromRoadGeometry(this.roadGeometry, -.075);
         this.rightRoadLine = this.lineFromRoadGeometry(this.roadGeometry, .075);
-        scene.add(this.middleRoadLine);
-        scene.add(this.leftRoadLine);
-        scene.add(this.rightRoadLine);
     };
     this.update = function () {
         if (startingAnimation) {
@@ -745,7 +766,7 @@ function heightMap() {
     this.xCellLength;
     this.zCellLength;
     this.geometry;
-    this.generateHeightMapFromBMP = function (imgIndex, scale) { //scale of 2 means every other pixel is a point on the heightmap, 3 means every third...
+    this.generateHeightMapFromBMP = function (img, scale) { //scale of 2 means every other pixel is a point on the heightmap, 3 means every third...
         this.location = new THREE.Vector2(0, 0);
         //create canvas element and add it to dom
         var canv = document.createElement('canvas');
@@ -753,7 +774,6 @@ function heightMap() {
         document.body.appendChild(canv); // adds the canvas to the body element
         var htmlCanvasElement = <HTMLCanvasElement> canv;
         //draw image on it
-        var img = imagesArray[imgIndex];
         htmlCanvasElement.height = img.height;
         htmlCanvasElement.width = img.width;
         var context = htmlCanvasElement.getContext('2d');
@@ -789,6 +809,7 @@ function heightMap() {
         this.zCellLength = 1;
     }
     this.generateHeightMapFromGeometry = function (geometry: THREE.Geometry, numOfXCells: number, numOfZCells: number) {
+
         this.geometry = geometry;
         //find the bounds of the geometry
         var maxX, maxZ, minX, minZ;
@@ -813,20 +834,25 @@ function heightMap() {
         this.xCellLength = (maxX - minX) / numOfXCells;
         this.zCellLength = (maxZ - minZ) / numOfZCells;
         //fill it
-        var plane: THREE.Plane;
+        //declaring this up here lets us call 'set' instead of 'new' a bunch of times to save on memory allocation
+        var plane = new THREE.Plane();
+        var triangle1 = new THREE.Triangle();
+        var triangle2 = new THREE.Triangle();
+        var upVector = new THREE.Vector3(0, 1, 0);
+        var vect1 = new THREE.Vector3();
+        var vect2 = new THREE.Vector3();
+        var ray = new THREE.Ray();
         for (var ii = 0; ii < geometry.faces.length; ii++) {
             var face = geometry.faces[ii];
-            var triangle1;
-            var triangle2;
             if (face instanceof THREE.Face3) {
                 var face3 = <THREE.Face3>face;
-                plane = new THREE.Plane().setFromCoplanarPoints(geometry.vertices[face3.a], geometry.vertices[face3.b], geometry.vertices[face3.c]);
-                triangle1 = new THREE.Triangle().set(geometry.vertices[face3.a], geometry.vertices[face3.b], geometry.vertices[face3.c]);
+                plane = plane.setFromCoplanarPoints(geometry.vertices[face3.a], geometry.vertices[face3.b], geometry.vertices[face3.c]);
+                triangle1 = triangle1.set(geometry.vertices[face3.a], geometry.vertices[face3.b], geometry.vertices[face3.c]);
             } else {
                 var face4 = <THREE.Face4>face;
-                plane = new THREE.Plane().setFromCoplanarPoints(geometry.vertices[face4.a], geometry.vertices[face4.b], geometry.vertices[face4.c]);
-                triangle1 = new THREE.Triangle().set(geometry.vertices[face4.a], geometry.vertices[face4.b], geometry.vertices[face4.c]);
-                triangle2 = new THREE.Triangle().set(geometry.vertices[face4.a], geometry.vertices[face4.c], geometry.vertices[face4.d]);
+                plane = plane.setFromCoplanarPoints(geometry.vertices[face4.a], geometry.vertices[face4.b], geometry.vertices[face4.c]);
+                triangle1 = triangle1.set(geometry.vertices[face4.a], geometry.vertices[face4.b], geometry.vertices[face4.c]);
+                triangle2 = triangle2.set(geometry.vertices[face4.a], geometry.vertices[face4.c], geometry.vertices[face4.d]);
             }
             var faceBounds = this.getFaceBounds(face, geometry); //xMax,zMax,xMin,zMin
             //send rays from heightmap locations inside the face bounds--so we dont have to try all the heightmap points
@@ -837,13 +863,13 @@ function heightMap() {
             for (var xx = startingXCellIndex; xx <= endXCellIndex; xx++) {
                 for (var zz = startingZCellIndex; zz <= endZCellIndex; zz++) {
                     var cellLocation = this.getCellLocation(xx, zz);
-                    var ray = new THREE.Ray(cellLocation, new THREE.Vector3(0, 1, 0));
+                    var ray = ray.set(cellLocation, upVector);
                     var intersectionPoint: THREE.Vector3 = ray.intersectPlane(plane);
                     if (typeof this.gridArray[xx][zz] === 'undefined') {
-                        var triangle1contains = triangle1.containsPoint(new THREE.Vector3(cellLocation.x, intersectionPoint.y, cellLocation.z));
+                        var triangle1contains = triangle1.containsPoint(vect1.set(cellLocation.x, intersectionPoint.y, cellLocation.z));
                         var triangle2contains = false;
                         if(triangle2)
-                            triangle2contains = triangle2.containsPoint(new THREE.Vector3(cellLocation.x, intersectionPoint.y, cellLocation.z));
+                            triangle2contains = triangle2.containsPoint(vect2.set(cellLocation.x, intersectionPoint.y, cellLocation.z));
                         if (triangle1contains || triangle2contains)//if they are in the face bounds, add it to the heightmap
                             this.gridArray[xx][zz] = intersectionPoint.y;
                     }
@@ -974,31 +1000,6 @@ var utils = {
         return p;
     }
 };
-
-function loadObjFile(filename: string, index) {
-    var loader;
-    if(filename.lastIndexOf('mtl')===filename.length-3)
-        loader = new THREE.OBJMTLLoader();
-    else
-        loader = new THREE.OBJLoader();
-    loader.index = index;
-    loader.addEventListener('load', function (event) {
-        var object = event.content; //event.content;
-        object.traverse(function (child) {
-            if (child instanceof THREE.Mesh) {
-               //child.material.map = texture;
-            }
-        });
-        object3DObjects[loader.index] = object;
-        objIsLoadedArray[loader.index] = true;
-        init2();
-    });
-    if (filename.lastIndexOf('mtl') === filename.length - 3)
-        loader.load(filename.replace('mtl', 'obj'), filename);
-    else
-        loader.load(filename);
-};
-
 
 
 function render() {
