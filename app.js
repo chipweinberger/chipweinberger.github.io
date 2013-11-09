@@ -409,6 +409,8 @@ function Road(object3D) {
                 //}
                 if(this.motorcycles[j].position.distanceTo(this.vehicles[i].currentPosition) < .03) {
                     this.motorcycles[j].speed = this.motorcycles[j].speed / 2;
+                    audioCrash.pause();
+                    audioCrash.currentTime = 0;
                     audioCrash.play();
                 }
             }
