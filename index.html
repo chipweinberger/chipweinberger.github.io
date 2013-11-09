@@ -48,6 +48,8 @@
         <button type="button" style="left: 135px;" onclick="road.start(4)">4 player</button>
         <button type="button" style="left: 180px;" onclick="road.winningLaps++">More Laps</button>
         <button type="button" style="left: 225px;" onclick="road.winningLaps--">Fewer Laps</button>
+        <button type="button" style="left: 275px;" onclick="audioSong.muted=!audioSong.muted">Song On/Off</button>
+        <button type="button" style="left: 325px;" onclick="audioCrash.muted=!audioCrash.muted;for(var i=0; i<road.motorcycles.length;i++){road.motorcycles[i].muteToggle();}">FX On/Off</button>
     </div>
 </body>
 </html>

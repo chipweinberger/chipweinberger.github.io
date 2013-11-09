@@ -7,6 +7,7 @@ Level and Model Design: Jeremy Chase - jeremychase2015@u.northwestern.edu
 var renderer;
 var scenery, road;
 var gamepadSupportAvailible, gamepads;
+var audioSong, audioCrash, audioEngine;
 //stores resources and whether or not they have been loaded
 var scene = new THREE.Scene();
 var object3DObjects = new Array();
@@ -17,6 +18,24 @@ var buttonStates = new Array();//the state of the keyboard buttons stored by key
 * The first thing that runs. Loads resources (images and obj files) into an array to be used later
 */
 function init() {
+    //load audio
+    /*
+    *Thanks to freemusicarchive.org for the audio
+    */
+    audioSong = new Audio('res/Surfer_Blood_Floating_Vibes.mp3');
+    audioSong.volume = .4;
+    audioSong.loop = true;
+    /*
+    *Thanks to freeSFX.co.uk for the audio
+    */
+    audioCrash = new Audio('res/vehicle_crash_small_.mp3');
+    audioCrash.volume = 1.0;
+    /*
+    *Thanks to freeSFX.co.uk for the audio
+    */
+    audioEngine = new Audio('res/atspeed.wav');
+    audioEngine.volume = 1.0;
+    audioEngine.loop = true;
     //load relevant obj files
     var objFilenames = [
         'res/finalissuemapinside.obj', 
@@ -116,6 +135,7 @@ function init2() {
         console.log("waiting for things to load");
         return;
     }
+    console.log(loadedCompletionPercent());
     //THREE.js boilerplate
     renderer = new THREE.WebGLRenderer();
     renderer.setClearColor(new THREE.Color().setRGB(135 / 256, 206 / 256, 235 / 256), .8);
@@ -180,6 +200,8 @@ function Road(object3D) {
     this.start = function (numPlayers) {
         //remove any old motos
         for(var i = 0; i < this.motorcycles.length; i++) {
+            this.motorcycles[i].engineSound.volume = 0;
+            this.motorcycles[i].engineSound.loop = false;
             this.motorcycles[i].remove();
         }
         this.startTime = null//will get set to a new value when calling startingAnimation()
@@ -198,7 +220,8 @@ function Road(object3D) {
         if(numPlayers === 4) {
             this.addMoto(new Motorcycle(0, rightRd, fwdVector, this, [
                 65, 
-                68
+                68, 
+                87
             ], {
                 left: 0,
                 top: 0,
@@ -207,7 +230,8 @@ function Road(object3D) {
             }));
             this.addMoto(new Motorcycle(1, midRd, fwdVector, this, [
                 37, 
-                39
+                39, 
+                38
             ], {
                 left: w / 2,
                 top: 0,
@@ -216,7 +240,8 @@ function Road(object3D) {
             }));
             this.addMoto(new Motorcycle(2, midRd, fwdVector, this, [
                 74, 
-                76
+                76, 
+                73
             ], {
                 left: 0,
                 top: h / 2,
@@ -225,7 +250,8 @@ function Road(object3D) {
             }));
             this.addMoto(new Motorcycle(3, leftRd, fwdVector, this, [
                 70, 
-                72
+                72, 
+                84
             ], {
                 left: w / 2,
                 top: h / 2,
@@ -236,7 +262,8 @@ function Road(object3D) {
             if(numPlayers === 3) {
                 this.addMoto(new Motorcycle(0, rightRd, fwdVector, this, [
                     65, 
-                    68
+                    68, 
+                    87
                 ], {
                     left: 0,
                     top: 0,
@@ -245,7 +272,8 @@ function Road(object3D) {
                 }));
                 this.addMoto(new Motorcycle(1, midRd, fwdVector, this, [
                     37, 
-                    39
+                    39, 
+                    38
                 ], {
                     left: w / 2,
                     top: 0,
@@ -254,7 +282,8 @@ function Road(object3D) {
                 }));
                 this.addMoto(new Motorcycle(2, leftRd, fwdVector, this, [
                     74, 
-                    76
+                    76, 
+                    73
                 ], {
                     left: 0,
                     top: h / 2,
@@ -265,7 +294,8 @@ function Road(object3D) {
                 if(numPlayers === 2) {
                     this.addMoto(new Motorcycle(0, rightRd, fwdVector, this, [
                         65, 
-                        68
+                        68, 
+                        87
                     ], {
                         left: 0,
                         top: 0,
@@ -274,7 +304,8 @@ function Road(object3D) {
                     }));
                     this.addMoto(new Motorcycle(1, leftRd, fwdVector, this, [
                         37, 
-                        39
+                        39, 
+                        38
                     ], {
                         left: w / 2,
                         top: 0,
@@ -285,7 +316,8 @@ function Road(object3D) {
                     if(numPlayers === 1) {
                         this.addMoto(new Motorcycle(1, midRd, fwdVector, this, [
                             37, 
-                            39
+                            39, 
+                            38
                         ], {
                             left: 0,
                             top: 0,
@@ -298,6 +330,8 @@ function Road(object3D) {
                 }
             }
         }
+        //start the audio
+        audioSong.play();
         this.paused = false;
     };
     this.render = function () {
@@ -355,21 +389,27 @@ function Road(object3D) {
         }
     };
     this.checkCollisons = function () {
-        for(var i = 0; i < this.vehicles.length; i++) {
-            //this.vehicles[i].geometry.geometry.computeBoundingBox();
-            //var bb1 = this.vehicles[i].geometry.geometry.boundingBox;
-            //bb1.translate(this.vehicles[i].currentPosition.x, this.vehicles[i].currentPosition.y, this.vehicles[i].currentPosition.z);
-            //bb1 = new THREE.Box3().setFromCenterAndSize(this.vehicles[i].currentPosition, .05);
-            for(var j = 0; j < this.motorcycles.length; j++) {
-                //this.motorcycles[j].geometry.computeBoundingBox();
-                //var bb2 = this.motorcycles[j].geometry.boundingBox;
-                //bb2.translate(this.motorcycles[j].position.x, this.motorcycles[j].position.y, this.motorcycles[j].position.z);
-                //bb1 = new THREE.Box3().setFromCenterAndSize(this.motorcycles[j].position, .05);
+        //the stuff in comments is the more expensive bounding box check - it doesnt seems to be much more accurate though so it doesnt seem worth the performance tradeoff
+        for(var j = 0; j < this.motorcycles.length; j++) {
+            //var motoGeom = utils.getGeometryFromObject3d(this.motorcycles[j].geometry);
+            //if(!motoGeom.boundingBox);
+            //    motoGeom.computeBoundingBox();
+            //var bb2 =new THREE.Box3(motoGeom.boundingBox.min, motoGeom.boundingBox.max);
+            //bb2 = bb2.applyMatrix4(this.motorcycles[j].motoMesh.matrix);
+            //bb2 = bb2.translate(new THREE.Vector3(this.motorcycles[j].position.x, this.motorcycles[j].position.y, this.motorcycles[j].position.z));
+            for(var i = 0; i < this.vehicles.length; i++) {
+                //var carGeom = utils.getGeometryFromObject3d(this.vehicles[i].geometry);
+                //if(!carGeom.boundingBox);
+                //    carGeom.computeBoundingBox();
+                //var bb1 = new THREE.Box3(carGeom.boundingBox.min, carGeom.boundingBox.max);
+                //bb1 = bb1.applyMatrix4(this.vehicles[i].vehicleMesh.matrix);
+                //bb1 = bb1.translate(new THREE.Vector3(this.vehicles[i].currentPosition.x, this.vehicles[i].currentPosition.y, this.vehicles[i].currentPosition.z));
                 //if (bb1.isIntersectionBox(bb2)) {
-                //    this.motorcycles[j].speed = -this.motorcycles[j].speed;
+                //    this.motorcycles[j].speed = this.motorcycles[j].speed / 2;
                 //}
                 if(this.motorcycles[j].position.distanceTo(this.vehicles[i].currentPosition) < .03) {
                     this.motorcycles[j].speed = this.motorcycles[j].speed / 2;
+                    audioCrash.play();
                 }
             }
         }
@@ -480,6 +520,8 @@ function Motorcycle(playerNumb, position, fwdVector, road, buttons, viewport) {
     ;
     this.left//the keycode that is the left button
     ;
+    this.accelerate//the keycode that is the accelerate button
+    ;
     this.road = road;
     this.playerNumber = playerNumb;
     this.motoMesh = object3DObjects[1].clone();
@@ -504,6 +546,7 @@ function Motorcycle(playerNumb, position, fwdVector, road, buttons, viewport) {
     this.currentPlace = 1//the place the moto is in
     ;
     this.currentLap = 1;
+    this.engineSound = new Audio('res/atspeed.wav');
     this.visitedIndexes = new Array(road.middleRoadLine.length)//makes sure all the indexes have been 'visited' before counting it as a lap
     ;
     this.nearestRoadIndex = road.startingIndex//used for determining the place
@@ -554,8 +597,14 @@ function Motorcycle(playerNumb, position, fwdVector, road, buttons, viewport) {
             if(i == 1) {
                 this.right = keycode;
             }
+            if(i == 2) {
+                this.accelerate = keycode;
+            }
         }
         this.geometry = utils.getGeometryFromObject3d(this.motoMesh);
+        this.engineSound.loop = true;
+        this.engineSound.volume = 0;
+        this.engineSound.play();
     };
     this.lastTimeUpdated = new Date().getTime();
     this.timeSinceLastUpdate = function () {
@@ -566,6 +615,11 @@ function Motorcycle(playerNumb, position, fwdVector, road, buttons, viewport) {
     };
     this.pastYRotation = -utils.angleBetweenVectors(new THREE.Vector3(0, 0, 1), new THREE.Vector3(this.forwardVector.x, 0, this.forwardVector.z));
     this.update = function () {
+        if(this.speed > this.maxSpeed) {
+            this.engineSound.volume = .1;
+        } else {
+            this.engineSound.volume = (Math.abs(this.speed) / this.maxSpeed) * .1;
+        }
         var timeDifference = this.timeSinceLastUpdate();
         //forwardVector updates
         var surfaceNormal = road.roadHeightMap.getTerrainNormal(this.position.x, this.position.z);
@@ -577,7 +631,7 @@ function Motorcycle(playerNumb, position, fwdVector, road, buttons, viewport) {
         var position = new THREE.Vector3();
         var scaledForwardVector = this.forwardVector.clone().multiplyScalar(this.speed * timeDifference / 16);
         while(!position.y) {
-            //if we went off the map, try turning the motorcycle (both ways)  until we are back on track
+            //see if the new position is on the map, if not continue through this while loop until we find a spot on the map
             var scaledFwdVec = scaledForwardVector.clone();
             scaledFwdVec.applyMatrix4(new THREE.Matrix4().makeRotationY(theta))//rotate according to theta
             ;
@@ -588,6 +642,7 @@ function Motorcycle(playerNumb, position, fwdVector, road, buttons, viewport) {
             ;
             //move to next theta if the position is not on the map
             if(!position.y) {
+                audioCrash.play();
                 theta = -theta//try both positive and negative
                 ;
                 if(theta > 0) {
@@ -643,6 +698,9 @@ function Motorcycle(playerNumb, position, fwdVector, road, buttons, viewport) {
         this.updateCurrentLap();
         //draw heads up display
         this.drawOverlay();
+    };
+    this.muteToggle = function () {
+        this.engineSound.muted = !this.engineSound.muted;
     };
     this.updateRoadPositions = function () {
         //first update nearest road index
@@ -753,9 +811,19 @@ function Motorcycle(playerNumb, position, fwdVector, road, buttons, viewport) {
     this.updateSpeed = function (timeDiff) {
         if(this.speed < this.maxSpeed) {
             if(this.speed > .003) {
-                this.speed += (.00005 * ((this.maxSpeed / 3) / Math.abs(this.speed))) * timeDiff / 16;
+                if(buttonStates[this.accelerate]) {
+                    this.speed += (.00005 * ((this.maxSpeed / 3) / Math.abs(this.speed))) * timeDiff / 16;
+                } else {
+                    this.speed -= (.00005 * ((this.maxSpeed / 3) / Math.abs(this.speed))) * timeDiff / 16;
+                }
             } else {
-                this.speed += .00005 * timeDiff / 16;
+                if(buttonStates[this.accelerate]) {
+                    this.speed += .00005 * timeDiff / 16;
+                } else {
+                    if(this.speed > 0) {
+                        this.speed = this.speed * .9;
+                    }
+                }
             }
         }
     };
@@ -1106,13 +1174,17 @@ function heightMap() {
     };
 }
 var utils = {
-    getGeometryFromObject3d: //A crude way of getting the geometry object from an Object3d.  Only gets the geometry of the first child however.
+    getGeometryFromObject3d: //A crude way of *syncronously* getting the geometry object from an Object3d.  Only gets the geometry of the first child however.
     function (obj) {
+        var obj1 = obj;
+        if(obj instanceof THREE.Geometry) {
+            return obj1;
+        }
         while(!(obj.children[0] instanceof THREE.Mesh)) {
             obj = obj.children[0];
         }
-        var obj1 = obj.children[0];
-        return obj1.geometry;
+        var obj2 = obj.children[0];
+        return obj2.geometry;
     },
     angleBetweenLineAndPlane: function (vector, plane) {
         var normalized = vector.normalize();
